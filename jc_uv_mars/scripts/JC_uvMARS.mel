@@ -1,0 +1,1087 @@
+////////////////////////////////////////////////////////////////////////
+// JC_uvMARS
+// Updated 10/22/2012
+// Author: Jonathan Curiel - with some help from the user community at Creative Crash.
+// Using various scripts, I was able to incorporate them into the UV Texture Window for easy access.
+// Brian Keffer one putting up one of his older scripts on Creative Crash (http://www.bk3d.com/)
+// Stefan David for his sdv_xformUV scripts (http://www.stefandavid.com/posts/category/scripts/)
+// This script has various options to Move, Align, Rotate and Scale and Normalize UV shells.
+// 
+////////////////////////////////////////////////////////////////////////
+// Updated 05/07/2013
+// Updated script to close Maya's UV Texture Editor if it was already open.
+// Updated uvMARS menus to look and function a little nicer.
+////////////////////////////////////////////////////////////////////////
+// Move UVs
+global proc JC_moveUV(string $direction)
+{
+	
+	$moveAmount = `floatField -query -value "uvMoveAmount"`;
+	ConvertSelectionToUVs;
+	if ($direction == "up")
+	{
+		polyEditUV  -v $moveAmount;
+	}
+	if ($direction == "down")
+	{
+		polyEditUV  -v ($moveAmount * -1);
+	}
+	if ($direction == "left")
+	{
+		polyEditUV  -u ($moveAmount * -1);
+	}
+	if ($direction == "right")
+	{
+		polyEditUV  -u $moveAmount;
+	}
+	if ($direction == "zero")
+	{
+		JC_setToZero();
+	}
+	if ($direction == "leftUp")
+	{
+		polyEditUV  -u ($moveAmount * -1);
+		polyEditUV -v $moveAmount;
+	}
+	if ($direction == "rightUp")
+	{
+		polyEditUV  -u $moveAmount;
+		polyEditUV -v $moveAmount;
+	}
+	if ($direction == "leftDown")
+	{
+		polyEditUV  -u ($moveAmount * -1);
+		polyEditUV  -v ($moveAmount * -1);
+	}
+	if ($direction == "rightDown")
+	{
+		polyEditUV  -u $moveAmount;
+		polyEditUV  -v ($moveAmount * -1);
+	}
+}
+
+////////////////////////////////////////////////////////////////////////
+// Set UVs To Zero
+global proc JC_setToZero()
+{
+	PolySelectConvert 4;
+	$UV_Bounds = `polyEvaluate -bc2`;
+	$Offset_OrginU = ($UV_Bounds[0] * -1);
+	$Offset_OrginV = ($UV_Bounds[2] * -1);
+	polyEditUV  -u $Offset_OrginU;
+	polyEditUV  -v $Offset_OrginV;
+}
+
+////////////////////////////////////////////////////////////////////////
+// Scale UV
+// Scale 25, 50 200 procedures
+global proc JC_Scale25()
+{
+	PolySelectConvert 4;
+	float $UV_pos[] = `polyEvaluate -bc2`;
+	$OX = $UV_pos[0];
+	$OY = $UV_pos[2];
+	$U = .25;
+	$V = .25;
+	polyEditUV -pu $OX -pv $OY -su $U -sv $V;
+}
+
+global proc JC_Scale50()
+{
+	PolySelectConvert 4;
+	float $UV_pos[] = `polyEvaluate -bc2`;
+	$OX = $UV_pos[0];
+	$OY = $UV_pos[2];
+	$U = .5;
+	$V = .5;
+	polyEditUV -pu $OX -pv $OY -su $U -sv $V;
+}
+
+global proc JC_Scale200()
+{
+	PolySelectConvert 4;
+	float $UV_pos[] = `polyEvaluate -bc2`;
+	$OX = $UV_pos[0];
+	$OY = $UV_pos[2];
+	$U = 2;
+	$V = 2;
+	polyEditUV -pu $OX -pv $OY -su $U -sv $V;
+}
+
+// Scale UV procedure
+global proc JC_ScaleUV()
+{
+	PolySelectConvert 4;
+	float $UV_pos[] = `polyEvaluate -bc2`;
+	$OX = $UV_pos[0];
+	$OY = $UV_pos[2];
+	$U = (`floatField -q -v "uvScaleAmount"`);
+	$V = (`floatField -q -v "uvScaleAmount"`);
+	polyEditUV -pu $OX -pv $OY -su $U -sv $V;
+}
+///////////////////////////////////////////////////////////////////////
+// Scale U procedure
+global proc JC_ScaleU()
+{
+	PolySelectConvert 4;
+	float $UV_pos[] = `polyEvaluate -bc2`;
+	$OX = $UV_pos[0];
+	$OY = $UV_pos[2];
+	$U = (`floatField -q -v "uvScaleAmount"`);
+	polyEditUV -pu $OX -pv $OY -su $U;
+}
+///////////////////////////////////////////////////////////////////////
+// Scale V
+global proc JC_ScaleV()
+{
+	PolySelectConvert 4;
+	float $UV_pos[] = `polyEvaluate -bc2`;
+	$OX = $UV_pos[0];
+	$OY = $UV_pos[2];
+	$V = (`floatField -q -v "uvScaleAmount"`);
+	polyEditUV -pu $OX -pv $OY -sv $V;
+}
+///////////////////////////////////////////////////////////////////////////////
+// Normalize U
+global proc JC_normalU()
+{
+	float $NS = `floatField -q -v "nScaleAmount"`;
+	//print $NS;
+	JC_setUToZero();
+	JC_setVToZero();
+	PolySelectConvert 4;
+	$UV_Bounds = `polyEvaluate -bc2`;
+	$Offset_OrginU = ((1 / $UV_Bounds[1]) * $NS);
+	polyEditUV -pu 0 -pv 0 -su $Offset_OrginU;
+	polyEditUV -pu 0 -pv 0 -sv $Offset_OrginU;
+}
+///////////////////////////////////////////////////////////////////////
+// Normalize V
+global proc JC_normalV()
+{
+	float $NS = `floatField -q -v "nScaleAmount"`;
+	JC_setUToZero();
+	JC_setVToZero();
+	PolySelectConvert 4;
+	$UV_Bounds = `polyEvaluate -bc2`;
+	$Offset_OrginV = ((1 / $UV_Bounds[3])* $NS);
+	polyEditUV -pu 0 -pv 0 -su $Offset_OrginV;
+	polyEditUV -pu 0 -pv 0 -sv $Offset_OrginV;
+}
+/////////////////////////////////////////////////////////////////////////////
+global proc JC_setUToZero()
+{
+	PolySelectConvert 4;
+	$UV_Bounds = `polyEvaluate -bc2`;
+	$Offset_OrginU = ($UV_Bounds[0] * -1);
+	polyEditUV  -u $Offset_OrginU;
+}
+///////////////////////////////////////////////////////////////////////////
+global proc JC_setVToZero()
+{
+	PolySelectConvert 4;
+	$UV_Bounds = `polyEvaluate -bc2`;
+	$Offset_OrginV = ($UV_Bounds[2] * -1);
+		polyEditUV  -v $Offset_OrginV;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
+// Align UVs
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
+// Perform UV alignment
+// mode 0=left, 1=right, 2=bottom, 3=top, 4=uCenter, 5=vCenter
+
+global proc JC_alignUvShells(int $mode) 
+{
+	PolySelectConvert 4;
+	global string $gSelect;
+	float $shellBox[], $offset, $allBox[], $center, $startTime;
+	string $shell[], $sel[], $uvs[];
+	int $uvCount, $uvsRemaining, $index;
+
+	undoInfo -swf 0;
+	setToolTo $gSelect;	
+	$startTime = `timerX`;
+	$index = 0;
+	$sel = `ls -sl`;
+	$uvs = `filterExpand -sm 35`;
+	if (!`size($uvs)`) error("No UVs selected");
+	select -r $uvs;
+
+	polySelectConstraint -shell 1 -border 0 -mode 2 -type 0x0010;
+	polySelectConstraint -shell 0 -border 0 -mode 0;
+	$allBox = `polyEvaluate -bc2`;
+	$uvCount = `size($uvs)`;
+	$uvsRemaining = $uvCount;
+	
+	progressWindow
+		-title "Align UV Shells"
+ 		-isInterruptable true
+ 		-progress 0
+ 		-maxValue $uvCount;
+ 	
+ 	if ($mode==0)	   print("Align UV Shells: Left\n");
+	else if ($mode==1) print("Align UV Shells: Right\n");
+	else if ($mode==2) print("Align UV Shells: Bottom\n");
+	else if ($mode==3) print("Align UV Shells: Top\n");
+	else if ($mode==4) print("Align UV Shells: Horizontal Center\n");
+	else {	
+		print("Align UV Shells: Vertical Center\n");
+		$index=2;
+	}
+	
+	$center = 0.5 * ($allBox[$index] + $allBox[($index+1)]);
+	
+	while ($uvsRemaining) {
+		if (`progressWindow -q -ic`) {
+			warning("Align UV Shells Cancelled\n");
+			break;
+		}
+		
+		progressWindow -edit
+			-progress ($uvCount-$uvsRemaining)
+			-status	("Aligning Shells: " + $uvsRemaining + " UVs left");
+	
+		select -r $uvs[0];
+		polySelectConstraint -shell 1 -border 0 -mode 2 -type 0x0010;
+		polySelectConstraint -shell 0 -border 0 -mode 0;
+		$shellBox = `polyEvaluate -bc2`;
+		
+		// Switch between border or center alignment
+		if ($mode<4) $offset = $allBox[$mode] - $shellBox[$mode];
+		else		 $offset = $center - (0.5 * ($shellBox[$index] + $shellBox[($index+1)]));
+			
+		undoInfo -swf 1;
+	 	if ($mode==0 || $mode==1 || $mode==4)
+	 		 polyEditUV -r 1 -u $offset;
+	 	else
+	 		polyEditUV -r 1 -v $offset;
+	 	undoInfo -swf 0;
+		
+		$shell = `ls -sl -fl`;
+		select -r $uvs;
+		select -deselect $shell;
+		$uvs = `ls -sl -fl`;
+		$uvsRemaining = `size($uvs)`;
+	}
+
+	select -r $sel;
+	progressWindow -endProgress;
+	print ("Align UV Shells: " + `timerX -startTime $startTime` + " sec\n");
+	undoInfo -swf 1;
+}	
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
+// Rotate UVs
+global proc JC_rotateUV(string $direction)
+{
+    
+	float $mayaVersion = `getApplicationVersionAsFloat`;
+	$moveAmount = `intField -query -value "uvRotateAmount"`;
+	ConvertSelectionToUVs;
+	if ($direction == "CCW")
+	{
+	    if ($mayaVersion >= 2018.0)
+	    {
+	        eval("polyRotateUVs " + $moveAmount + " 0");
+	    }
+	    else
+	    {
+	        eval("polyRotateUVs " + $moveAmount);
+	    }
+	    //polyRotateUVs  $moveAmount;
+	}
+	if ($direction == "CW")
+	{
+	    if ($mayaVersion >= 2018.0)
+	    {
+	        eval("polyRotateUVs " + ($moveAmount * -1) + " 0");
+	    }
+	    else
+	    {
+	        eval("polyRotateUVs " + ($moveAmount * -1));
+	    }
+		//polyRotateUVs  ($moveAmount * -1);
+	}
+	if ($direction == "45CCW")
+	{
+	    if ($mayaVersion >= 2018.0)
+	    {
+	        eval("polyRotateUVs " + 45 + " 0");
+	    }
+	    else
+	    {
+	        eval("polyRotateUVs " + 45);
+	    }
+		//polyRotateUVs  45 ;
+	}
+	if ($direction == "45CW")
+	{
+	    if ($mayaVersion >= 2018.0)
+	    {
+	        eval("polyRotateUVs " + -45 + " 0");
+	    }
+	    else
+	    {
+	        eval("polyRotateUVs " + -45);
+	    }
+		//polyRotateUVs  -45;
+	}
+		if ($direction == "90CCW")
+	{
+	    if ($mayaVersion >= 2018.0)
+	    {
+	        eval("polyRotateUVs " + 90 + " 0");
+	    }
+	    else
+	    {
+	        eval("polyRotateUVs " + 90);
+	    }
+		//polyRotateUVs  90 ;
+	}
+	if ($direction == "90CW")
+	{
+	    if ($mayaVersion >= 2018.0)
+	    {
+	        eval("polyRotateUVs " + -90 + " 0");
+	    }
+	    else
+	    {
+	        eval("polyRotateUVs " + -90);
+	    }
+		//polyRotateUVs  -90;
+	}
+}
+///////////////////////////////////////////////////////////////////////////////////////////////////
+// Stack UV Shells
+
+global proc JC_stackUvShells() 
+{
+	ConvertSelectionToUVs;
+	global string $gSelect;
+	float $shellBox[], $offsetU, $offsetV, $allBox[], $centerU, $centerV, $startTime;
+	string $shell[], $sel[], $uvs[];
+	int $uvCount, $uvsRemaining;
+
+	undoInfo -swf 0;
+	setToolTo $gSelect;	
+	$startTime = `timerX`;
+	$index = 0;
+	$sel = `ls -sl`;
+	$uvs = `filterExpand -sm 35`;
+	if (!`size($uvs)`) error("No UVs selected");
+	select -r $uvs;
+
+	polySelectConstraint -shell 1 -border 0 -mode 2 -type 0x0010;
+	polySelectConstraint -shell 0 -border 0 -mode 0;
+	$allBox = `polyEvaluate -bc2`;
+	$uvCount = `size($uvs)`;
+	$uvsRemaining = $uvCount;
+	
+	print("Align UV Shells: Stack UV Shells\n");
+	
+	progressWindow
+		-title "Stack UV Shells"
+ 		-isInterruptable true
+ 		-progress 0
+ 		-maxValue $uvCount;
+ 	
+	$centerU = 0.5 * ($allBox[0] + $allBox[1]);
+	$centerV = 0.5 * ($allBox[2] + $allBox[3]);
+	
+	while ($uvsRemaining) {
+		if (`progressWindow -q -ic`) {
+			warning("Align UV Shells Cancelled\n");
+			break;
+		}
+		
+		progressWindow -edit
+			-progress ($uvCount-$uvsRemaining)
+			-status	("Stacking Shells: " + $uvsRemaining + " UVs left");
+	
+		select -r $uvs[0];
+		polySelectConstraint -shell 1 -border 0 -mode 2 -type 0x0010;
+		polySelectConstraint -shell 0 -border 0 -mode 0;
+		
+		$shellBox = `polyEvaluate -bc2`;
+		$offsetU = $centerU - (0.5 * ($shellBox[0] + $shellBox[1]));
+		$offsetV = $centerV - (0.5 * ($shellBox[2] + $shellBox[3]));
+			
+		undoInfo -swf 1;
+		polyEditUV -r 1 -u $offsetU -v $offsetV;
+		undoInfo -swf 0;
+		
+		$shell = `ls -sl -fl`;
+		select -r $uvs;
+		select -deselect $shell;
+		$uvs = `ls -sl -fl`;
+		$uvsRemaining = `size($uvs)`;
+	}
+
+	select -r $sel;
+	progressWindow -endProgress;
+	print ("Align UV Shells: " + `timerX -startTime $startTime` + " sec\n");
+	undoInfo -swf 1;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
+// Center UVs
+
+global proc JC_centerUvs() {
+	
+	ConvertSelectionToUVs;
+	string $sel[] = `ls -sl`;
+	string $uvs[] = `filterExpand -sm 35`;
+	if (!`size($uvs)`) error("No UVs selected");
+	
+	//select -r $uvs;
+	//polySelectBorderShell 0;
+			
+	float $shellBox[] = `polyEvaluate -bc2`;
+	float $offsetU = 0.5 - ($shellBox[0] + $shellBox[1]) * 0.5;	
+	float $offsetV = 0.5 - ($shellBox[2] + $shellBox[3]) * 0.5;
+	
+	polyEditUV -u $offsetU -v $offsetV;
+	
+	select -r $sel;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
+// This returns the selected uv shells as a string[]
+//
+global proc string[] JC_shellify() 
+{
+	string $shellStr[], $shell[];
+	string $uvs[] = `filterExpand -sm 35`;
+	int $uvCount = `size($uvs)`;
+	int $uvsLeft = $uvCount;
+	float $startTime = `timerX`;
+		
+	if (!$uvCount) error("No UVs selected");
+	
+	progressWindow
+		-title "Orient UV Shells"
+ 		-status "Defining Shells"
+ 		-isInterruptable true
+ 		-maxValue $uvCount
+ 		-progress 0;
+ 		
+	while ($uvsLeft) {
+		if (`progressWindow -query -isCancelled`) {
+			warning("Operation Cancelled\n");
+			break;
+		}
+		
+		progressWindow
+			-edit
+			-status ("Defining Shells: " + $uvsLeft + " UVs left")
+ 			-progress ($uvCount - $uvsLeft);
+ 			
+		select -r $uvs[0];	
+		polySelectConstraint -type 0x0010 -shell 1 -border 0 -mode 2; 
+		polySelectConstraint -shell 0 -border 0 -mode 0;
+		$shell = `ls -sl -fl`;
+		
+		// $uvs = stringArrayRemove($shell, $uvs); -> 6x slower
+		select -r $uvs;
+		select -deselect $shell; 
+		$uvs = `ls -sl -fl`;
+				
+		$uvsLeft = `size($uvs)`;
+		$shellStr[`size($shellStr)`] = stringArrayToString($shell, " ");
+		clear($shell);
+	}
+
+	print ("Shell Definition: " + `timerX -startTime $startTime` + " sec\n");
+	return $shellStr;
+}
+
+
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
+// Performs the uv orientation
+//
+global proc JC_orientUvs() 
+{
+	int $sweepSteps = 8;
+	int $iterations = 4;
+	float $sweepRange = 90;
+	float $sweepAngle = $sweepRange / $sweepSteps;
+	float $oldTotal, $newTotal, $bestAngle, $correctionAngle;
+	float $shellBox[] = `polyEvaluate -bc2`;
+	float $pU = 0.5 * ($shellBox[0] + $shellBox[1]);	
+	float $pV = 0.5 * ($shellBox[2] + $shellBox[3]);
+	
+	// Sweep Method
+	for ($i=1; $i<=$iterations; $i++) {
+		$shellBox = `polyEvaluate -bc2`;
+		$oldTotal = ($shellBox[1] - $shellBox[0]) + ($shellBox[3] - $shellBox[2]);
+		$bestAngle = 0;
+		
+		for ($n=1; $n<$sweepSteps; $n++) {
+			polyEditUV -pivotU $pU -pivotV $pV -angle $sweepAngle;
+			$shellBox = `polyEvaluate -bc2`;
+			$newTotal = ($shellBox[1] - $shellBox[0]) + ($shellBox[3] - $shellBox[2]);
+			
+			if ($newTotal < $oldTotal) {
+				$oldTotal = $newTotal;
+				$bestAngle = ($n * $sweepAngle);
+			}
+		}
+		
+		$correctionAngle = $bestAngle - ($sweepAngle * ($sweepSteps - 1));
+		
+		if ($i!=$iterations) {
+			$sweepRange = $sweepAngle;
+			$sweepAngle = $sweepRange / $sweepSteps;
+			$correctionAngle -= $sweepRange * 0.5;
+		}
+		
+		polyEditUV -pivotU $pU -pivotV $pV -angle $correctionAngle;
+	}
+}
+
+
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
+// This version skips the shellify pass which can be time consuming with high uv counts.
+// It only works on one shell per time.
+//
+global proc JC_orientSingleShell() {
+	ConvertSelectionToUVs;
+ 	global string $gSelect;
+	setToolTo $gSelect;
+	
+	string $sel[] = `ls -sl`;
+	string $uvs[] = `filterExpand -sm 35`;
+	if (!`size($uvs)`) error("No UVs selected");
+	
+	polySelectConstraint -type 0x0010 -shell 1 -border 0 -mode 2; 
+	polySelectConstraint -shell 0 -border 0 -mode 0;
+	JC_orientUvs;
+	
+	select -r $sel;
+}
+
+
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
+// Main procedure
+//
+global proc JC_orientUvshells() {
+	ConvertSelectionToUVs;
+ 	global string $gSelect;
+	setToolTo $gSelect;
+	
+	string $sel[]    = `ls -sl`;
+	string $shells[] = JC_shellify();
+	int $shellCount  = `size($shells)`;
+	float $startTime = `timerX`;
+	
+	progressWindow
+		-edit
+ 		-maxValue $shellCount;
+ 		
+	for ($i=0; $i<$shellCount; $i++) {
+		if (`progressWindow -query -isCancelled`) {
+			warning("Operation Cancelled\n");
+			break;
+		}
+		
+		progressWindow
+			-edit
+			-progress ($i + 1)
+			-status ("Orienting Shell: " + ($i + 1) + "/" + $shellCount);
+		
+		eval("select -r " + $shells[$i]);
+		JC_orientUvs;
+	}
+	
+	progressWindow -endProgress;
+	select -r $sel;
+	
+	float $totalTime = `timerX -startTime $startTime`;
+	print ("Orienting UVs: " + $totalTime + " sec\n");
+}
+
+////////////////////////////////////////////////////////////////////////
+// Snap Align
+global proc JC_snapAlign()
+{
+	string $Selected_UVs[] = `ls -sl -fl`; // save selection
+
+	if (size($Selected_UVs) == 2)
+	{
+		undo; // deselect last component selected
+		string $FSel[] = `ls -sl -fl`; // store first selected component
+		if (size($FSel) == 0)
+		{
+			error "Do not select target and source UVs at the same time";
+		}
+		else
+		{
+			string $LSel[] = stringArrayRemove($FSel, $Selected_UVs); //storing last selected component
+			//get target uv
+			//select $Selected_UVs[1];
+			float $Target_location[] = `polyEditUV -q -u $LSel[0]`;
+		
+			//get start uv
+			//select $Selected_UVs[0];
+			float $Start_location[] = `polyEditUV -q -u $FSel[0]`;
+			select $FSel[0];
+			SelectUVShell;
+		
+			$u_dist = $Target_location[0] - $Start_location[0];
+			$v_dist = $Target_location[1] - $Start_location[1];
+		
+			polyEditUV -pu $Start_location[0] -pv $Start_location[1] -u $u_dist -v $v_dist;
+		}
+	}
+	else
+	{
+		error "Please check your UV selection";
+	}
+
+}
+///////////////////////////////////////////////////////////////////////////////////
+// Create UI
+global proc JC_uvMARS()
+{
+	int $sepHeight = 10;
+	// close uvMars or UV Texture Editor Window if they are open
+	if (`window -query -exists uvMars`)
+	{
+		deleteUI uvMars;
+	}
+	if (`window -query -exists polyTexturePlacementPanel1Window`)
+    {
+		deleteUI polyTexturePlacementPanel1Window;
+    }
+	
+	
+	
+	string $win1 = 		`window 			-title "UV MARS" 
+											-resizeToFitChildren true
+											"uvMars"`;
+	
+	string $pane1 = 	`paneLayout			-configuration "vertical2"
+											-paneSize 1 10 1
+											-parent $win1`;
+	
+	// Move UVs Menu
+	
+	string $col1 = 		`columnLayout 		-adjustableColumn true
+											-parent $win1`;
+	
+	
+	string $frame1 = 	`frameLayout 		-label "Move UVs" 
+											-labelAlign "top"
+	                						//-borderStyle "out"
+											-collapse false
+											-collapsable false
+											-parent $col1`;
+	
+	string $grid1 = 	`gridLayout			-numberOfRowsColumns 3 3
+											-cellWidthHeight 32 32
+											-columnsResizable false
+											-parent $frame1`;
+	
+	// Move UV buttons
+	string $mLeftUp = 	`symbolButton 		-annotation "Move Selected UVs Left and Up"		
+											-command ("JC_moveUV leftUp")
+											-parent $grid1
+											-image "JC_uv_leftUp.bmp"
+											"mLeftUpBtn"`;
+	
+	string $mUp = 		`symbolButton 		-annotation "Move Selected UVs Up" 	
+											-command ("JC_moveUV up")
+											-parent $grid1
+											-image "JC_uv_up.bmp"
+											"mUpBtn"`;
+	
+	string $mRightUp = 	`symbolButton 		-annotation "Move Selected UVs Right and Up"	
+											-command ("JC_moveUV rightUp")
+											-parent $grid1
+											-image "JC_uv_rightUp.bmp"
+											"mRightUpBtn"`;
+	
+	string $mLeft = 	`symbolButton 		-annotation "Move Selected UVs Left"	
+											-command ("JC_moveUV left")
+											-parent $grid1
+											-image "JC_uv_left.bmp"
+											"mLeftBtn"`;
+	
+	string $mZero = 	`symbolButton 		-annotation "Move Selected UVs to Zero" 	
+											-command ("JC_moveUV zero")
+											-parent $grid1
+											-image "JC_uv_zero.bmp"
+											"mZeroBtn"`;
+	
+	string $mRight = 	`symbolButton 		-annotation "Move Selected UVs Right"
+											-command ("JC_moveUV right")
+											-parent $grid1
+											-image "JC_uv_right.bmp"
+											"mRightBtn"`;
+	
+	string $mLeftDown = `symbolButton 		-annotation "Move Selected UVs Left and Down"	
+											-command ("JC_moveUV leftDown")
+	
+											-parent $grid1
+											-image "JC_uv_leftDown.bmp"
+											"mLeftDownBtn"`;
+	
+	string $mDown = 	`symbolButton 		-annotation "Move Selected UVs Down"
+											-command ("JC_moveUV down")
+											-parent $grid1
+											-image "JC_uv_down.bmp"
+											"mDownBtn"`;
+	
+	string $mRightDown = `symbolButton 		-annotation "Move Selected UVs Right and  Down"	
+											-command ("JC_moveUV rightDown")
+											-parent $grid1
+											-image "JC_uv_rightDown.bmp"
+											"mRightDownBtn"`;
+	
+	string $sep1 = 		`separator			-parent $col1`;
+	
+	//Move Input Field
+	string $mAmount = 	`text				-label "Move Amount:"
+											-height 16
+											-align "left"
+											-parent $col1`;
+	string $mAmountFld = `floatField		-annotation "Move Amount"
+											-minValue 0.00
+											-maxValue 50.00
+											-value 1.00
+											-precision 2
+											-parent $col1
+											"uvMoveAmount"`;
+	
+	
+	string $sep2 = 		`separator			-height $sepHeight
+											-parent $col1`;
+	
+	
+	
+	
+	// Align UVs Menu
+	// mode 0=left, 1=right, 2=bottom, 3=top, 4=uCenter, 5=vCenter
+	
+	string $frame2 = 	`frameLayout 		-label "Align UVs" 
+											-labelAlign "top"
+	                						-borderStyle "out"
+											-collapse false
+											-collapsable false
+											-parent $col1`;
+	
+	string $grid2 = 	`gridLayout			-numberOfRowsColumns 2 3
+											-cellWidthHeight 32 32
+											-columnsResizable false
+											-parent $frame2`;
+	
+	
+	string $aMinU = 	`symbolButton 		-annotation "Align Selected UV Shells in Min U" 
+											-command ("JC_alignUvShells 0")
+											-parent $grid2
+											-image "JC_aluvLeft.bmp"
+											"aMinUBtn"`;
+	
+	string $aAvgU = 	`symbolButton 		-annotation "Align Selected UV Shells in Avg U"
+											-command ("JC_alignUvShells 4")
+											-parent $grid2
+											-image "JC_aluvCenterU.bmp"
+											"aAvgUBtn"`;
+	
+	string $aMaxU = 	`symbolButton 		-annotation "Align Selected UV Shells in Max U" 		
+											-command ("JC_alignUvShells 1")
+											-parent $grid2
+											-image "JC_aluvRight.bmp"
+											"aMaxUBtn"`;
+	
+	string $aMinV = 	`symbolButton		-annotation "Align Selected UV Shells in Min V"	
+											-command ("JC_alignUvShells 2")
+											-parent $grid2
+											-image "JC_aluvBottom.bmp"
+											"aMinVBtn"`;
+	
+	string $aAvgV = 	`symbolButton 		-annotation "Align Selected UVs Shells in Min V"
+											-command ("JC_alignUvShells 5")
+											-parent $grid2
+											-image "JC_aluvCenterV.bmp"
+											"aAvgVBtn"`;
+	
+	string $aMaxV = 	`symbolButton 		-annotation "Align Selected UV Shells in Max V" 	
+											-command ("JC_alignUvShells 3")
+											-parent $grid2
+											-image "JC_aluvTop.bmp"
+											"aMaxVBtn"`;
+	
+	
+	string $sep3 = 		`separator			-height $sepHeight
+											-parent $col1`;
+	
+	//Rotate UVs menu
+	
+	
+	string $frame3 = 	`frameLayout 		-label "Rotate UVs" 
+											-labelAlign "top"
+	                						-borderStyle "out"
+											-collapse false
+											-collapsable false
+											-parent $col1`;
+	
+	string $grid3 = 	`gridLayout			-numberOfRowsColumns 2 3
+											-cellWidthHeight 32 32
+											-columnsResizable false
+											-parent $frame3`;
+	
+	// Rotate UV buttons
+	
+	string $r45CW = 	`symbolButton 		-annotation "Rotate Selected UVs Clockwise 45 Degrees"
+											-command ("JC_rotateUV 45CW")
+											-parent $grid3
+											-image "JC_uv_rotate_+45.bmp"
+											"r45CWBtn"`;
+	
+	string $r90CW = 	`symbolButton 		-annotation "Rotate Selected UVs Clockwise 90 Degrees"
+											-command ("JC_rotateUV 90CW")
+											-parent $grid3
+											-image "JC_uv_rotate_+90.bmp"
+											"r90CWBtn"`;
+	
+	string $rCW = 		`symbolButton 		-annotation "Rotate Selected UVs Clockwise Based on Rotate Amount"
+											-command ("JC_rotateUV CW")
+											-parent $grid3
+											-image "JC_uv_rotate_CW.bmp"
+											"rCWBtn"`;
+	
+	string $r45CCW = 	`symbolButton 		-annotation "Rotate Selected UVs Counterclockwise 45 Degrees"
+											-command ("JC_rotateUV 45CCW")
+											-parent $grid3
+											-image "JC_uv_rotate_-45.bmp"
+											"r45CCWBtn"`;
+	
+	string $r90CCW = 	`symbolButton 		-annotation "Rotate Selected UVs Counterclockwise 90 Degrees"
+											-command ("JC_rotateUV 90CCW")
+											-parent $grid3
+											-image "JC_uv_rotate_-90.bmp"
+											"r90CCWBtn"`;
+	
+	string $rCCW = 		`symbolButton 		-annotation "Rotate Selected UVs Counterclockwise Based on Rotate Amount"
+											-command ("JC_rotateUV CCW")
+											-parent $grid3
+											-image "JC_uv_rotate_CCW.bmp"
+											"rCCWBtn"`;
+	
+	string $sep4 = 		`separator			-parent $col1`;
+	
+	//Rotate Input Field
+	string $rAmount = 	`text				-label "Rotate Amount:"
+											-height 16
+											-align "left"
+											-parent $col1`; 
+											
+	string $rAmountFld = `intField			-annotation "Rotate Amount"
+											-minValue -360
+											-maxValue 360
+											-value 180
+											-parent $col1
+											"uvRotateAmount"`;
+	
+	string $sep5 = 		`separator			-height $sepHeight
+											-parent $col1`;
+	
+	//Scale UVs menu
+	
+	
+	string $frame4 = 	`frameLayout 		-label "Scale UVs" 
+											-labelAlign "top"
+	                						-borderStyle "out"
+											-collapse false
+											-collapsable false
+											-parent $col1`;
+	
+	string $grid4 = 	`gridLayout			-numberOfRowsColumns 2 3
+											-cellWidthHeight 32 32
+											-columnsResizable false
+											-parent $frame4`;
+	
+	// Scale UVs buttons
+	string $s25 = 		`symbolButton 		-annotation "Scale UV Shells Half"
+											-command ("JC_Scale25")
+											-parent $grid4
+											-image "JC_uv_scale_25x.bmp"
+											"s25Btn"`;
+	
+	string $s50 = 		`symbolButton 		-annotation "Scale UV Shells Half"
+											-command ("JC_Scale50")
+											-parent $grid4
+											-image "JC_uv_scale_50x.bmp"
+											"s50Btn"`;
+	
+	string $s200 = 		`symbolButton		-annotation "Scale UV Shells Double"
+											-command ("JC_Scale200")
+											-parent $grid4
+											-image "JC_uv_scale_200x.bmp"
+											"s200Btn"`;
+	
+	string $sU = 		`symbolButton 		-annotation "Scale UV Shells in U based on Scale Amount"
+											-command ("JC_ScaleU")
+											-parent $grid4
+											-image "JC_uv_scale_u.bmp"
+											"sUBtn"`;
+	
+	string $sV = 		`symbolButton 		-annotation "Scale UV Shells in V based on Scale Amount"
+											-command ("JC_ScaleV")
+											-parent $grid4
+											-image "JC_uv_scale_v.bmp"
+											"sVBtn"`;
+	
+	string $sUV = 		`symbolButton 		-annotation "Scale UV Shells in UV based on Scale Amount"
+											-command ("JC_ScaleUV")
+											-parent $grid4
+											-image "JC_uv_scale_uv.bmp"
+											"sUVBtn"`;
+	
+	string $sep6 = 		`separator			-parent $col1`;
+	
+	//Scale Input Field
+	string $sAmount = 	`text				-label "Scale Amount:"
+											-height 16
+											-align "left"
+											-parent $col1`;
+											
+	string $sAmountFld = `floatField		-annotation "Scale Amount"
+											-minValue 0.00
+											-maxValue 50.00
+											-value 2.00
+											-precision 2
+											-parent $col1
+											"uvScaleAmount"`;
+	
+	string $sep7 = 		`separator			-height $sepHeight
+											-parent $col1`;
+	
+	//Normalize UVs menu
+	
+	
+	string $frame5 = 	`frameLayout 		-label "Normalize UVs" 
+											-labelAlign "top"
+	                						-borderStyle "out"
+											-collapse false
+											-collapsable false
+											-parent $col1`;
+	
+	string $grid5 = 	`gridLayout			-numberOfRowsColumns 1 2
+											-cellWidthHeight 48 32
+											-columnsResizable false
+											-parent $frame5`;
+	
+	// Normalize UV buttons
+	string $nU = 		`symbolButton 		-annotation "Normalize UV Shells in U based on Normalize Scale"
+											-command ("JC_normalU")
+											-parent $grid5
+											-image "JC_normalize_u.bmp"
+											"nUBtn"`;
+	
+	string $nV = 		`symbolButton 		-annotation "Normalize UV Shells in V based on Normalize Scale"
+											-command ("JC_normalV")
+											-parent $grid5
+											-image "JC_normalize_v.bmp"
+											"nVBtn"`;
+	
+	string $sep8 = 		`separator			-parent $col1`;
+	//Normalize Input Field
+	string $nAmount = 	`text				-label "Normalize Amount:"
+											-height 16
+											-align "left"
+											-parent $col1`;
+	string $nAmountFld = `floatField		-annotation "Normal Scale"
+											-minValue 0.00
+											-maxValue 50.00
+											-value 1.00
+											-precision 2
+											-parent $col1
+											"nScaleAmount"`;
+	
+	string $sep9 = 		`separator			-height $sepHeight
+											-parent $col1`;
+	
+	
+	//Extras UVs menu
+	
+	
+	string $frame6 = 	`frameLayout 		-label "Extras" 
+											-labelAlign "top"
+	                						-borderStyle "out"
+											-collapse false
+											-collapsable false
+											-parent $col1`;
+	
+	string $grid6 = 	`gridLayout			-numberOfRowsColumns 3 2
+											-cellWidthHeight 48 32
+											-columnsResizable false
+											-parent $frame6`;
+	
+	// Extras Buttons
+	
+	string $stack = 	`symbolButton 		-annotation "Stacks UVs"
+											-command ("JC_stackUvShells")
+											-parent $grid6
+											-image "JC_stackUvShells.bmp"
+											"stackBtn"`;
+	
+	string $center = 	`symbolButton 		-annotation "Center UVs"
+											-command ("JC_centerUvs")
+											-parent $grid6
+											-image "JC_centerUvs.bmp"
+											"centerBtn"`;
+	
+	string $oUVShells = `symbolButton 		-annotation "Orient UV Shells"
+											-command ("JC_orientUvshells")
+											-parent $grid6
+											-image "JC_orientUvshells.bmp"
+											"oUVShellsBtn"`;
+	
+	string $oSShell = 	`symbolButton 		-annotation "Orient Single Shell"
+											-command ("JC_orientSingleShell")
+											-parent $grid6
+											-image "JC_orientSingleShell.bmp"
+											"oSShellBtn"`;
+	string $snapAlign = `symbolButton		-annotation "Snap Align UV Shells"
+											-command ("JC_snapAlign")
+											-parent $grid6
+											-image "JC_snapAlign.bmp"
+											"snapAlignBtn"`;
+	
+	string $sep10 = 		`separator			-parent $col1`;
+	
+	
+	
+	// Find the Render View panel
+	string $uvTextureViews[] = `getPanel -scriptType polyTexturePlacementPanel`;
+	
+	if (size( $uvTextureViews))
+	{
+	  // Unparent the scriptedPanel from where it is currently docked
+		scriptedPanel -e -unParent $uvTextureViews[0];
+	  // Fill the 'hole' left in the UI from removing the Render View
+		fillEmptyPanes;
+	}
+	else
+	// A Render View panel was not found -- create an unParented panel
+	{
+		global int $gUseMenusInPanels;
+		scriptedPanel 	-mbv $gUseMenusInPanels 
+						-type polyTexturePlacementPanel
+	                	-unParent 
+						-label "UV Texture Editor" polyTexturePlacementPanel;
+	}
+	
+	// Now dock the Render View into our own layout.
+	scriptedPanel -e -parent $pane1 $uvTextureViews[0];					
+	
+	showWindow $win1;
+
+}
